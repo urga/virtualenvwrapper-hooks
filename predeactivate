@@ -1,0 +1,27 @@
+#!/bin/bash
+# This hook is run before every virtualenv is deactivated.
+
+function unset_env() {
+    # Export every envvar in .env if it's not commented out.
+    # If the variable already exists, keep a backup so we can switch back wehn deactivating.
+    while read line; do
+      if [[ $line != \#* && $line == *\=* ]] 
+      then
+        IFS='=' read -ra keyvalue <<< "$line"
+        backup_key=${keyvalue[0]}_BACKUP
+        if [[ -n ${!backup_key} ]]
+        then
+            # Restore backup
+            export ${keyvalue[0]}=${!backup_key}
+            unset ${backup_key}
+        else
+            unset ${keyvalue[0]}
+        fi
+        unset keyvalue
+        unset backup_key
+        
+      fi
+    done <$1
+}
+
+unset_env $(get_dotenv_path)
